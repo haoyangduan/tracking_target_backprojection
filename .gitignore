@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+
+# Generated projections, viewers, and detector outputs
+out/
+
+# Local datasets and calibration assets
+/data/
+*.stl
+*.ply
+*.obj
+*.pcd
+*.bag
+*.svo
+*.mp4
+*.avi
+
+# Local environments and tooling
+.venv/
+env/
+.pytest_cache/
