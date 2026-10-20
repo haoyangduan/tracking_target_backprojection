@@ -36,6 +36,13 @@ import sys
 import traceback
 import yaml
 
+# Support both `python -m live_backprojection.gui_qt` from the parent
+# directory and direct `python gui_qt.py` from a cloned repository.
+if __package__ in (None, ""):
+    _REPO_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _REPO_PARENT not in sys.path:
+        sys.path.insert(0, _REPO_PARENT)
+
 from live_backprojection import _pathsetup  # noqa: F401
 from live_backprojection.pose_resolution import ZED_TO_HIK
 from single_frame_backprojection.vo_pose import load_vo_track_json
@@ -87,8 +94,8 @@ _DEFAULT_RIG_EXTRINSICS = os.path.join(_pathsetup.PROJECT_ROOT, "data", "extrins
 # Full-res is ~4x slower per frame (4096x3000 instead of 2048x1500 mask)
 # but gives more detection candidates to work with on the full sensor image.
 RESOLUTION_OPTIONS = [
-    ("Downsampled 0.5×  (faster, default)", 0.5),
-    ("Full resolution 1.0×  (slower, ~4× cost)", 1.0),
+    ("Downsampled 0.5Ã—  (faster, default)", 0.5),
+    ("Full resolution 1.0Ã—  (slower, ~4Ã— cost)", 1.0),
 ]
 
 KNOWN_CAMERAS = [
@@ -183,22 +190,22 @@ LIVE_FIELDS = [
      "Target camera name. If different from base camera, rig extrinsics are required."),
     ("vo_track_path", "VO pose track (.json)", "file", "JSON (*.json)",
      "Per-frame camera pose track."),
-    ("rig_extrinsics_path", "  └ Rig extrinsics", "file", "JSON (*.json)",
+    ("rig_extrinsics_path", "  â”” Rig extrinsics", "file", "JSON (*.json)",
      "Required if camera_name isn't the VO track's base camera -- derives its pose via the "
      "fixed rig geometry instead (default: data/extrinsics_on_gui_0922.json)."),
     ("mesh_path", "Car mesh", "file", "Mesh files (*.stl *.ply *.obj)", None),
-    ("mesh_scale", "  └ Mesh scale -> mm", None, None,
+    ("mesh_scale", "  â”” Mesh scale -> mm", None, None,
      "1000 if the mesh is authored in meters, 1 if already in millimeters."),
     ("tracking_model_path", "Ground truth points3d (.txt)", "file", "Text (*.txt)",
      "Creaform tracking-model points -- used for the timeline viewer's reference overlay and for "
      "final-results matching."),
     ("target_hz", "Throttle rate (fps)", None, None, "Blank = run as fast as possible."),
-    ("tag_size_mm", "  └ Viewer tag size (mm)", None, None,
+    ("tag_size_mm", "  â”” Viewer tag size (mm)", None, None,
      "Base radius (mm) for target spheres/tags in the 3D result viewers."),
-    ("cluster_merge_dist_mm", "  └ Cluster merge dist. (mm)", None, None,
+    ("cluster_merge_dist_mm", "  â”” Cluster merge dist. (mm)", None, None,
      "Final results: detections closer than this, across all frames, are treated as the same "
      "physical sticker."),
-    ("false_detect_threshold_mm", "  └ False-detect thresh. (mm)", None, None,
+    ("false_detect_threshold_mm", "  â”” False-detect thresh. (mm)", None, None,
      "Final results: a clustered point farther than this from its nearest ground-truth point is "
      "flagged as a likely false detect."),
 ]
@@ -218,17 +225,17 @@ TEACHER_FIELDS = [
      "Maps the Creaform rig's own base camera to this project's hik_* camera names (creaform_base_cam)."),
     ("teacher_creaform_track_csv_path", "Creaform tracking data (.csv)", "file", "CSV (*.csv)",
      "Per-frame Creaform pose samples, matched to camera frames by timestamp (see time_diff_ms)."),
-    ("teacher_creaform_max_time_diff_ms", "  └ Max Creaform sync err. (ms)", None, None,
+    ("teacher_creaform_max_time_diff_ms", "  â”” Max Creaform sync err. (ms)", None, None,
      "Frames whose Creaform sample is matched more than this many ms away from the camera "
      "timestamp are excluded from the oracle rather than used with a wrong position."),
     ("teacher_vo_track_path", "Teacher VO track (.json, optional)", "file", "JSON (*.json)",
      "Alternative pose source: per-frame VO track. If specified, VO is used instead of Creaform for teacher oracle."),
     ("teacher_mesh_path", "Teacher car mesh", "file", "Mesh files (*.stl *.ply *.obj)", None),
-    ("teacher_mesh_scale", "  └ Teacher mesh scale -> mm", None, None,
+    ("teacher_mesh_scale", "  â”” Teacher mesh scale -> mm", None, None,
      "1000 if the mesh is authored in meters, 1 if already in millimeters."),
     ("teacher_points3d_path", "Teacher ground truth points3d", "file", "Text (*.txt)",
      "Ground truth for the oracle the detector parameters are searched against."),
-    ("teacher_rig_extrinsics_path", "  └ Rig extrinsics", "file", "JSON (*.json)",
+    ("teacher_rig_extrinsics_path", "  â”” Rig extrinsics", "file", "JSON (*.json)",
      "Required if teacher_camera_name isn't the base camera -- "
      "derives its pose via the fixed rig geometry instead (default: data/extrinsics_on_gui_0922.json)."),
     ("teacher_export_dir", "Review images folder", "dir", None,
@@ -502,14 +509,14 @@ class LiveBackprojectionGUI(QMainWindow):
         self._resolution_combo.setToolTip(
             "Resolution used for BOTH threshold derivation (teacher sweep) and live detection. "
             "They must match: block_size, C offset, and area bounds are all pixel-scale-dependent.\n"
-            "Full resolution runs the adaptive threshold on the original 4096×3000 image -- "
-            "~4× more pixels than downsampled, so derivation and detection both take ~4× longer."
+            "Full resolution runs the adaptive threshold on the original 4096Ã—3000 image -- "
+            "~4Ã— more pixels than downsampled, so derivation and detection both take ~4Ã— longer."
         )
         res_layout.addWidget(self._resolution_combo, stretch=1)
         res_label = QLabel("Detection resolution")
         res_label.setToolTip(
             "Controls the scale factor applied to each frame before adaptive thresholding. "
-            "0.5× = half-resolution (faster). 1.0× = full sensor resolution (slower, ~4× cost)."
+            "0.5Ã— = half-resolution (faster). 1.0Ã— = full sensor resolution (slower, ~4Ã— cost)."
         )
         form_layout.addRow(res_label, res_row)
 
@@ -836,7 +843,7 @@ class LiveBackprojectionGUI(QMainWindow):
                                  ("block_size", "c_offset", "scale", "center_ring_min", "area_lo", "area_hi")}
         self.run_btn.setEnabled(True)
         scale = self._derived_params['scale']
-        res_label = "0.5× downsampled" if scale == 0.5 else ("1.0× full-res" if scale == 1.0 else f"{scale}×")
+        res_label = "0.5Ã— downsampled" if scale == 0.5 else ("1.0Ã— full-res" if scale == 1.0 else f"{scale}Ã—")
         self.derived_label.setText(
             f"Derived ({res_label}): block_size={self._derived_params['block_size']}  "
             f"C={self._derived_params['c_offset']}  "
@@ -871,14 +878,14 @@ class LiveBackprojectionGUI(QMainWindow):
         selected_scale = RESOLUTION_OPTIONS[self._resolution_combo.currentIndex()][1]
         derived_scale = self._derived_params.get("scale", 0.5)
         if abs(selected_scale - derived_scale) > 1e-9:
-            res_selected = "0.5× downsampled" if selected_scale == 0.5 else "1.0× full-res"
-            res_derived = "0.5× downsampled" if derived_scale == 0.5 else "1.0× full-res"
+            res_selected = "0.5Ã— downsampled" if selected_scale == 0.5 else "1.0Ã— full-res"
+            res_derived = "0.5Ã— downsampled" if derived_scale == 0.5 else "1.0Ã— full-res"
             reply = QMessageBox.question(
                 self,
-                "Resolution Mismatch — Re-derive Required",
+                "Resolution Mismatch â€” Re-derive Required",
                 f"The detection resolution is set to <b>{res_selected}</b>, but the last derivation "
                 f"ran at <b>{res_derived}</b>.<br><br>"
-                f"block_size, C offset, and area bounds are all pixel-scale-dependent — running at a "
+                f"block_size, C offset, and area bounds are all pixel-scale-dependent â€” running at a "
                 f"different resolution than they were derived at will give incorrect results.<br><br>"
                 f"Click <b>Derive Thresholding...</b> first to re-derive at {res_selected}.",
                 QMessageBox.StandardButton.Ok,
@@ -998,7 +1005,7 @@ class LiveBackprojectionGUI(QMainWindow):
             mesh, _scene = build_mesh_scene(self._get("mesh_path"), scale=float(self._get("mesh_scale") or 1.0))
             tracking_model_path = self._get("tracking_model_path") or None
             cam = self._last_stage2.get("source", {}).get("camera_name", self._get("camera_name"))
-            window_title = f"Live Detection Timeline — Camera: {cam}"
+            window_title = f"Live Detection Timeline â€” Camera: {cam}"
             show_timeline(mesh, self._last_stage2, tracking_model_path=tracking_model_path,
                           sphere_radius_mm=tag_size_mm, window_name=window_title)
         finally:
@@ -1033,7 +1040,7 @@ class LiveBackprojectionGUI(QMainWindow):
             export_cluster_json(final_results, _DEFAULT_OUT_CLUSTER, camera_name=cam)
             self._append_log(f"cluster.json exported to {_DEFAULT_OUT_CLUSTER}")
             mesh, _scene = build_mesh_scene(self._get("mesh_path"), scale=float(self._get("mesh_scale") or 1.0))
-            window_title = f"Final Detected Tracking Model — Camera: {cam}"
+            window_title = f"Final Detected Tracking Model â€” Camera: {cam}"
             show_final_results(mesh, final_results, sphere_radius_mm=tag_size_mm, window_name=window_title)
         finally:
             QApplication.restoreOverrideCursor()
